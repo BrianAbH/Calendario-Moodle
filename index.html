@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Pendientes de Moodle</title>
+<meta name="description" content="Carga el calendario exportado de Moodle y ve en una sola lista las tareas, cuestionarios y foros pendientes de todos tus cursos.">
+<meta name="referrer" content="no-referrer">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@600;700&family=Hanken+Grotesk:wght@400;500;600&family=JetBrains+Mono:wght@500;600&display=swap">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<noscript><p class="noscript">Esta página necesita JavaScript para leer tu calendario. Actívalo en tu navegador y recarga.</p></noscript>
+
+<main class="app">
+  <header class="top">
+    <div>
+      <p class="eyebrow" id="today"></p>
+      <h1>Mis pendientes</h1>
+      <p class="status" id="status"></p>
+    </div>
+    <div class="hbtns">
+      <button class="btn" id="helpBtn" type="button">Ayuda</button>
+      <button class="btn" id="toggleImport" type="button" aria-expanded="false" aria-controls="importPanel">Actualizar calendario</button>
+    </div>
+  </header>
+
+  <div class="notice" id="notice" hidden>
+    <div><b>Ejemplo</b>Estas actividades son inventadas para que veas cómo funciona.</div>
+    <button class="btn primary" id="noticeBtn" type="button" aria-controls="importPanel">Cargar mi calendario</button>
+  </div>
+
+  <div class="notice" id="stale" hidden>
+    <div><b>Aviso</b><span id="staleTxt"></span></div>
+    <button class="btn" id="staleBtn" type="button" aria-controls="importPanel">Cargar uno nuevo</button>
+  </div>
+
+  <section class="panel" id="importPanel" hidden aria-labelledby="panelTitle">
+    <div class="phead">
+      <h2 id="panelTitle">Cargar calendario</h2>
+      <button class="btn quiet" id="closeImport" type="button">Cerrar</button>
+    </div>
+    <div>
+      <h3>Cómo sacarlo de Moodle</h3>
+      <ol>
+        <li>En tu aula virtual abre <b>Calendario</b> y entra a <b>Importar o exportar calendarios</b>.</li>
+        <li>Pulsa <b>Exportar calendario</b>.</li>
+        <li>En «Eventos a exportar» deja <b>Todos</b>. En «Intervalo de tiempo» elige uno largo, por ejemplo <b>Recientes y próximos 60 días</b>.</li>
+        <li>Pulsa <b>Exportar</b>. Se descarga un archivo <b>.ics</b>. Súbelo aquí.</li>
+      </ol>
+      <p class="fine">El archivo se lee en tu navegador y no se envía a ningún servidor. Para actualizar, exporta de nuevo y vuelve a subirlo: lo que ya marcaste como completado se conserva.</p>
+    </div>
+    <div>
+      <label class="drop" id="drop" for="file">
+        <strong>Arrastra tu archivo .ics aquí</strong>
+        <span>o pulsa para elegirlo (máximo 5 MB)</span>
+        <input class="sr" type="file" id="file" accept=".ics,text/calendar">
+      </label>
+      <details>
+        <summary>También puedes pegar el contenido del archivo</summary>
+        <textarea id="paste" placeholder="BEGIN:VCALENDAR&#10;..." spellcheck="false" aria-label="Contenido del archivo .ics"></textarea>
+        <button class="btn" id="loadPaste" type="button">Cargar texto</button>
+      </details>
+      <p class="msg" id="msg" role="status"></p>
+      <div class="row">
+        <button class="btn quiet" id="reset" type="button">Borrar mis datos de este navegador</button>
+        <span id="resetAsk" hidden>
+          ¿Seguro? Se borran el calendario y tus marcas de completado.
+          <button class="btn danger" id="resetYes" type="button">Sí, borrar</button>
+          <button class="btn quiet" id="resetNo" type="button">Cancelar</button>
+        </span>
+      </div>
+    </div>
+  </section>
+
+  <section class="next" id="next" hidden aria-label="Lo siguiente"></section>
+
+  <section class="strip" id="strip" aria-label="Carga por día"></section>
+
+  <section class="controls" aria-label="Filtros">
+    <div class="range" id="range" role="group" aria-label="Rango de fechas"></div>
+    <div class="chips" id="chips" role="group" aria-label="Filtrar por curso"></div>
+    <div class="find">
+      <input type="search" id="q" placeholder="Buscar por nombre o curso  (atajo: /)" aria-label="Buscar actividades" autocomplete="off" maxlength="80">
+      <label class="tg" for="showDone"><input type="checkbox" id="showDone">Mostrar completadas</label>
+    </div>
+    <div class="active">
+      <span class="count" id="count" aria-live="polite"></span>
+      <span class="pills" id="pills"></span>
+    </div>
+  </section>
+
+  <section id="list" aria-label="Actividades"></section>
+
+  <section class="help" id="help" aria-labelledby="helpTitle">
+    <h2 id="helpTitle">Ayuda</h2>
+    <details id="faqExport">
+      <summary>¿Cómo saco mi calendario de Moodle?</summary>
+      <p>En tu aula virtual abre Calendario, luego Importar o exportar calendarios y Exportar calendario. Deja «Todos» en «Eventos a exportar», elige un intervalo largo como «Recientes y próximos 60 días» y pulsa Exportar. Después sube el archivo .ics en «Cargar calendario».</p>
+    </details>
+    <details>
+      <summary>¿Cada cuánto debo actualizarlo?</summary>
+      <p>Cuando quieras ver cambios, exporta de nuevo y vuelve a subir el archivo. Tus marcas de completado se conservan. Si pasan más de tres días, la página te avisa.</p>
+    </details>
+    <details>
+      <summary>¿Qué significan Entrega, Cierra y Abre?</summary>
+      <p><b>Entrega</b> es la fecha límite de una tarea. <b>Cierra</b> es cuando se cierra un cuestionario o un foro. <b>Abre</b> es cuando se habilita: no es una fecha límite, por eso se ve más tenue.</p>
+    </details>
+    <details>
+      <summary>No veo una actividad, ¿qué reviso?</summary>
+      <ul>
+        <li>Que el intervalo de tiempo de la exportación incluya su fecha.</li>
+        <li>Que «Eventos a exportar» esté en «Todos».</li>
+        <li>Que la actividad tenga fecha en Moodle. Lo que no tiene fecha no sale en el calendario.</li>
+        <li>Las actividades vencidas hace más de dos semanas no se muestran.</li>
+      </ul>
+    </details>
+    <details>
+      <summary>¿Qué pasa con mis datos?</summary>
+      <p>Todo se queda en este navegador. La página no usa cuentas y no envía tu calendario a ningún servidor. Para borrarlo, usa «Borrar mis datos de este navegador» dentro de «Cargar calendario».</p>
+    </details>
+    <details>
+      <summary>Atajos de teclado</summary>
+      <p><kbd>/</kbd> abre la búsqueda. <kbd>Esc</kbd> dentro de la búsqueda la limpia.</p>
+    </details>
+  </section>
+
+  <footer class="foot" id="foot"></footer>
+</main>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="app.js" defer></script>
+</body>
+</html>
